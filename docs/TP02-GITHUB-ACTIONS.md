@@ -22,6 +22,8 @@ Docker daemon supplies an isolated PostgreSQL container. No shared database
 or production database password is required. JaCoCo generates coverage at
 `verify`, after both test suites. Reports are retained as the
 `backend-test-reports` Actions artifact, including when a test fails.
+`sonar.junit.reportPaths` explicitly imports both Surefire and Failsafe XML
+reports so SonarCloud's executed-test count also includes the integration tests.
 
 ### 2-1 — What are Testcontainers?
 
@@ -165,9 +167,14 @@ upload-artifact v7.0.2, setup-buildx v4.4.1, login v4.6.0 and build-push v7.4.0.
 - Three-image build checkpoint: [successful run 39400886932](https://github.com/YoussefAG1337/tp-devops-correction-docker/actions/runs/39400886932), commit `588bb8b`; backend tests and all three image builds passed.
 - Split-workflow test on `develop`: [successful run 39401669416](https://github.com/YoussefAG1337/tp-devops-correction-docker/actions/runs/39401669416).
 - Missing-credential guard: [main run 39401669455](https://github.com/YoussefAG1337/tp-devops-correction-docker/actions/runs/39401669455) passed Maven verification, then failed explicitly because `SONAR_TOKEN` was absent. [Delivery run 39401772220](https://github.com/YoussefAG1337/tp-devops-correction-docker/actions/runs/39401772220) was correctly skipped.
-- SonarCloud analysis and Docker Hub publication require the account-specific
-  secrets/variables above. Their configuration alone is not evidence of a
-  passed quality gate or published images.
+- Maintained-action versions on `develop`: [successful run 39402138723](https://github.com/YoussefAG1337/tp-devops-correction-docker/actions/runs/39402138723).
+- Main tests and SonarCloud gate: [successful run 39402755552](https://github.com/YoussefAG1337/tp-devops-correction-docker/actions/runs/39402755552), commit `0e0cdc9`. SonarCloud's public API returned quality gate `OK`, 92.1% coverage and zero test errors/failures.
+- Docker Hub delivery: [successful run 39402964322](https://github.com/YoussefAG1337/tp-devops-correction-docker/actions/runs/39402964322). Login and publication steps succeeded for the API, database and HTTP server, using the source commit that passed CI.
+
+These links preserve the checkpoint evidence. For subsequent commits, the
+[CI workflow](https://github.com/YoussefAG1337/tp-devops-correction-docker/actions/workflows/main.yml)
+and [delivery workflow](https://github.com/YoussefAG1337/tp-devops-correction-docker/actions/workflows/docker.yml)
+show the latest runs; the SonarCloud dashboard above shows the latest analysis.
 
 See [GitHub workflow_run documentation](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#workflow_run)
 for completion filtering, permissions and the security considerations of chaining workflows.
