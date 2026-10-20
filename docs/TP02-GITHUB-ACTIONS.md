@@ -89,6 +89,12 @@ and variables → Actions**:
 The public keys can be found in the SonarCloud project's GitHub Actions
 setup tutorial. Do not commit tokens to a file or paste them into an issue.
 
+For this imported public project, the configured identifiers are:
+
+- `SONAR_ORGANIZATION`: `youssefag1337`
+- `SONAR_PROJECT_KEY`: `YoussefAG1337_tp-devops-correction-docker`
+- Dashboard: https://sonarcloud.io/project/overview?id=YoussefAG1337_tp-devops-correction-docker
+
 After `clean verify`, the pipeline calls the pinned SonarScanner for Maven
 `5.8.0.7211` using the compiled classes and combined JaCoCo XML coverage report.
 The token is supplied only through the `SONAR_TOKEN` environment variable.
@@ -129,10 +135,15 @@ default SHA of a `workflow_run` event. No artifacts from untrusted PR workflows
 are executed in the publication job. A concurrency group serializes publication,
 and stale main revisions are skipped before login or image publication.
 
-Docker Hub login uses `docker/login-action@v3` with repository secrets.
+Docker Hub login uses `docker/login-action` v4.6.0 with repository secrets.
 The three images are pushed with `latest` and `sha-<full-tested-commit>` tags.
 Buildx keeps an independent cache for each image. No runtime database password
 is supplied to or baked into the image build.
+
+The handout's older action versions were replaced after GitHub reported their
+Node.js runtime as deprecated. The final workflows pin immutable commit SHAs
+with release-version comments: checkout v7.0.1, setup-java v6.1.0,
+upload-artifact v7.0.2, setup-buildx v4.4.1, login v4.6.0 and build-push v7.4.0.
 
 ### How to finish external setup and rerun
 
@@ -152,6 +163,8 @@ is supplied to or baked into the image build.
 
 - First backend CI checkpoint: [successful run 39400577021](https://github.com/YoussefAG1337/tp-devops-correction-docker/actions/runs/39400577021), commit `e2cb2e3`.
 - Three-image build checkpoint: [successful run 39400886932](https://github.com/YoussefAG1337/tp-devops-correction-docker/actions/runs/39400886932), commit `588bb8b`; backend tests and all three image builds passed.
+- Split-workflow test on `develop`: [successful run 39401669416](https://github.com/YoussefAG1337/tp-devops-correction-docker/actions/runs/39401669416).
+- Missing-credential guard: [main run 39401669455](https://github.com/YoussefAG1337/tp-devops-correction-docker/actions/runs/39401669455) passed Maven verification, then failed explicitly because `SONAR_TOKEN` was absent. [Delivery run 39401772220](https://github.com/YoussefAG1337/tp-devops-correction-docker/actions/runs/39401772220) was correctly skipped.
 - SonarCloud analysis and Docker Hub publication require the account-specific
   secrets/variables above. Their configuration alone is not evidence of a
   passed quality gate or published images.
