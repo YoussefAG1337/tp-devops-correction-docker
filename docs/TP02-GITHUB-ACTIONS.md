@@ -69,3 +69,43 @@ Pushing uploads a built image to a registry so another machine, a deployment
 pipeline or a teammate can pull and run that exact application without
 rebuilding the source. `latest` identifies the latest published main build;
 a separate commit-SHA tag provides traceability to a particular source revision.
+
+## Checkpoint 3 — SonarCloud quality gate
+
+In SonarQube Cloud (the service called SonarCloud in the handout), import the
+GitHub fork into an organization and use `main` as the project's main branch.
+Choose CI-based analysis with GitHub Actions and disable automatic analysis
+so the same project is not analyzed using two competing methods.
+
+Configure these settings in the GitHub repository under **Settings → Secrets
+and variables → Actions**:
+
+- Repository secret `DOCKERHUB_USERNAME`: the lowercase Docker Hub username.
+- Repository secret `DOCKERHUB_TOKEN`: a Docker Hub access token permitted to push the three course images.
+- Repository secret `SONAR_TOKEN`: a SonarCloud token permitted to analyze the project.
+- Repository variable `SONAR_ORGANIZATION`: the exact Sonar organization key.
+- Repository variable `SONAR_PROJECT_KEY`: the exact Sonar project key.
+
+The public keys can be found in the SonarCloud project's GitHub Actions
+setup tutorial. Do not commit tokens to a file or paste them into an issue.
+
+After `clean verify`, the pipeline calls the pinned SonarScanner for Maven
+`5.8.0.7211` using the compiled classes and combined JaCoCo XML coverage report.
+The token is supplied only through the `SONAR_TOKEN` environment variable.
+`sonar.qualitygate.wait=true` makes CI wait for the server's verdict and fail
+if the quality gate fails; the processing timeout is 300 seconds. There is
+no `continue-on-error` and a missing token or project key is a visible failure.
+
+Tests run on both `main` and `develop`. To support the SonarCloud Free plan,
+analysis runs on `main` and same-repository PRs targeting `main`; fork PRs and
+pushes to `develop` run tests without exposing analysis credentials.
+
+To reproduce analysis locally, first set `SONAR_TOKEN` in your environment
+and use the same scanner goal after `mvn clean verify`, passing your public
+organization and project keys. Test execution requires JDK 21, Maven and a
+running Docker daemon.
+
+Sources: [Maven Failsafe usage](https://maven.apache.org/surefire/maven-failsafe-plugin/usage.html),
+[SonarCloud GitHub Actions setup](https://docs.sonarsource.com/sonarqube-cloud/analyzing-source-code/ci-based-analysis/github-actions-for-sonarcloud),
+[quality gate parameters](https://docs.sonarsource.com/sonarqube-cloud/analyzing-source-code/analysis-parameters/parameters-not-settable-in-ui),
+[SonarCloud subscription plans](https://docs.sonarsource.com/sonarqube-cloud/administering-sonarcloud/managing-subscription/subscription-plans).

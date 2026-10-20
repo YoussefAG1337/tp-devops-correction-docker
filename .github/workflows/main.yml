@@ -19,6 +19,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
+          # SonarCloud needs history to identify new code accurately.
+          fetch-depth: 0
           persist-credentials: false
 
       - name: Set up JDK 21
@@ -32,6 +34,38 @@ jobs:
       # Failsafe starts the Testcontainers PostgreSQL integration tests.
       - name: Build and test with Maven
         run: mvn --batch-mode --no-transfer-progress clean verify --file simple-api/pom.xml
+
+      # Free-tier analysis covers main and trusted PRs targeting main.
+      # Fork PRs still run the tests but never receive analysis credentials.
+      - name: SonarCloud analysis and quality gate
+        if: >-
+          github.ref == 'refs/heads/main' ||
+          (github.event_name == 'pull_request' &&
+           github.base_ref == 'main' &&
+           github.event.pull_request.head.repo.full_name == github.repository)
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_ORGANIZATION: ${{ vars.SONAR_ORGANIZATION }}
+          SONAR_PROJECT_KEY: ${{ vars.SONAR_PROJECT_KEY }}
+        run: |
+          # Fail visibly when setup is incomplete instead of silently skipping the gate.
+          for required in SONAR_TOKEN SONAR_ORGANIZATION SONAR_PROJECT_KEY; do
+            if [[ -z "${!required}" ]]; then
+              echo "::error::Configure $required in repository Actions secrets/variables."
+              exit 1
+            fi
+          done
+
+          # Reuse the bytecode, test reports and JaCoCo XML from clean verify above.
+          # SONAR_TOKEN stays in the environment, never in a command-line argument.
+          mvn --batch-mode --no-transfer-progress \
+            org.sonarsource.scanner.maven:sonar-maven-plugin:5.8.0.7211:sonar \
+            --file simple-api/pom.xml \
+            "-Dsonar.projectKey=$SONAR_PROJECT_KEY" \
+            "-Dsonar.organization=$SONAR_ORGANIZATION" \
+            -Dsonar.host.url=https://sonarcloud.io \
+            -Dsonar.qualitygate.wait=true \
+            -Dsonar.qualitygate.timeout=300
 
       - name: Upload test and coverage reports
         if: always()
