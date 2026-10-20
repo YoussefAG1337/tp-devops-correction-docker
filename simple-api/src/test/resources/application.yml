@@ -8,6 +8,7 @@ spring:
     generate-ddl: false
   datasource:
     driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
-    url: jdbc:tc:postgresql://hostname/simple-api
-    username: ${embedded.postgresql.user}
-    password: ${embedded.postgresql.password}
+    # Testcontainers starts and disposes of this isolated database automatically.
+    url: jdbc:tc:postgresql:14.1-alpine:///simple-api
+    username: test
+    password: test

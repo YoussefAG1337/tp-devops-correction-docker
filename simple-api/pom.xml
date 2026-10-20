@@ -89,6 +89,18 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-failsafe-plugin</artifactId>
+				<!-- Bind integration tests to mvn verify; declaring the plugin alone is insufficient. -->
+				<configuration>
+					<failIfNoTests>true</failIfNoTests>
+				</configuration>
+				<executions>
+					<execution>
+						<goals>
+							<goal>integration-test</goal>
+							<goal>verify</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 			<plugin>
 				<groupId>org.jacoco</groupId>
@@ -104,8 +116,9 @@
 						</goals>
 					</execution>
 					<execution>
-						<id>post-unit-test</id>
-						<phase>test</phase>
+						<!-- Include both unit and integration test coverage in SonarCloud's XML report. -->
+						<id>coverage-after-all-tests</id>
+						<phase>verify</phase>
 						<goals>
 							<goal>report</goal>
 						</goals>
