@@ -62,14 +62,37 @@ jobs:
 
           # Reuse the bytecode, test reports and JaCoCo XML from clean verify above.
           # SONAR_TOKEN stays in the environment, never in a command-line argument.
-          mvn --batch-mode --no-transfer-progress \
+          analysis_log="$(mktemp)"
+          if mvn --batch-mode --no-transfer-progress \
             org.sonarsource.scanner.maven:sonar-maven-plugin:5.8.0.7211:sonar \
             --file simple-api/pom.xml \
             "-Dsonar.projectKey=$SONAR_PROJECT_KEY" \
             "-Dsonar.organization=$SONAR_ORGANIZATION" \
             -Dsonar.host.url=https://sonarcloud.io \
             -Dsonar.qualitygate.wait=true \
-            -Dsonar.qualitygate.timeout=300
+            -Dsonar.qualitygate.timeout=300 \
+            2>&1 | tee "$analysis_log"; then
+            exit 0
+          fi
+
+          # Surface useful errors in the Actions summary, with the token redacted.
+          python - "$analysis_log" <<'PY'
+          import os
+          import re
+          import sys
+          from pathlib import Path
+
+          text = Path(sys.argv[1]).read_text(errors="replace")
+          token = os.environ.get("SONAR_TOKEN")
+          if token:
+              text = text.replace(token, "[REDACTED]")
+          text = re.sub(r"\x1b\[[0-9;]*m", "", text)
+          lines = [line for line in text.splitlines() if "ERROR" in line]
+          for line in (lines or text.splitlines()[-12:])[-20:]:
+              escaped = line.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+              print(f"::error::{escaped}")
+          PY
+          exit 1
 
       - name: Upload test and coverage reports
         if: always()
