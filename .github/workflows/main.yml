@@ -11,6 +11,10 @@ on:
 permissions:
   contents: read
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   test-backend:
     runs-on: ubuntu-24.04
@@ -77,36 +81,3 @@ jobs:
             simple-api/target/failsafe-reports/
             simple-api/target/site/jacoco/
           retention-days: 14
-
-  build-and-push-docker-image:
-    # Checkpoint 2 first verifies the builds; publishing is added in the split CD workflow.
-    needs: test-backend
-    runs-on: ubuntu-24.04
-    timeout-minutes: 25
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - image: simple-api
-            context: ./simple-api
-          - image: database
-            context: ./database
-          - image: httpd
-            context: ./http-server
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build ${{ matrix.image }} image
-        uses: docker/build-push-action@v6
-        with:
-          context: ${{ matrix.context }}
-          tags: tp-devops-${{ matrix.image }}:ci-${{ github.sha }}
-          push: false
-          cache-from: type=gha,scope=${{ matrix.image }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.image }}

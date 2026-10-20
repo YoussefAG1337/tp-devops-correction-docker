@@ -109,3 +109,52 @@ Sources: [Maven Failsafe usage](https://maven.apache.org/surefire/maven-failsafe
 [SonarCloud GitHub Actions setup](https://docs.sonarsource.com/sonarqube-cloud/analyzing-source-code/ci-based-analysis/github-actions-for-sonarcloud),
 [quality gate parameters](https://docs.sonarsource.com/sonarqube-cloud/analyzing-source-code/analysis-parameters/parameters-not-settable-in-ui),
 [SonarCloud subscription plans](https://docs.sonarsource.com/sonarqube-cloud/administering-sonarcloud/managing-subscription/subscription-plans).
+
+## Final step — Split pipelines
+
+The final configuration uses two workflows:
+
+1. `.github/workflows/main.yml` (**CI DevOps**): `test-backend` compiles and
+   tests pushes to `main` and `develop`, and pull requests. On supported trusted
+   events it also enforces the SonarCloud gate.
+2. `.github/workflows/docker.yml` (**CD Docker images**): listens for completed
+   **CI DevOps** runs on `main`. The publication job requires a successful run
+   caused by a push in this same repository. A failed test or quality gate,
+   a `develop` push or a pull request cannot publish images.
+
+`needs` cannot refer to a job in another workflow, so `workflow_run` plus the
+successful-conclusion condition replaces the intermediate `needs: test-backend`.
+The checkout uses `github.event.workflow_run.head_sha`, never the unrelated
+default SHA of a `workflow_run` event. No artifacts from untrusted PR workflows
+are executed in the publication job. A concurrency group serializes publication,
+and stale main revisions are skipped before login or image publication.
+
+Docker Hub login uses `docker/login-action@v3` with repository secrets.
+The three images are pushed with `latest` and `sha-<full-tested-commit>` tags.
+Buildx keeps an independent cache for each image. No runtime database password
+is supplied to or baked into the image build.
+
+### How to finish external setup and rerun
+
+1. Add the three repository secrets and two variables listed above.
+2. In SonarCloud, confirm CI-based analysis is enabled and automatic analysis
+   is disabled, and that the project is public on the free plan.
+3. Open the latest **CI DevOps** run on `main`, then choose **Re-run all jobs**.
+   Rerunning the original push event preserves the delivery trigger. A manual
+   workflow-dispatch run is useful for testing, but intentionally does not publish.
+4. Confirm `test-backend` succeeds, SonarCloud reports a passed quality gate,
+   and the subsequent **CD Docker images** run publishes all three images.
+5. On Docker Hub, open the three image repositories and verify both tags.
+   `docker pull <dockerhub-user>/tp-devops-simple-api:sha-<tested-commit>` can
+   retrieve the exact verified API image on another machine.
+
+### Verification evidence
+
+- First backend CI checkpoint: [successful run 39400577021](https://github.com/YoussefAG1337/tp-devops-correction-docker/actions/runs/39400577021), commit `e2cb2e3`.
+- Three-image build checkpoint: [successful run 39400886932](https://github.com/YoussefAG1337/tp-devops-correction-docker/actions/runs/39400886932), commit `588bb8b`; backend tests and all three image builds passed.
+- SonarCloud analysis and Docker Hub publication require the account-specific
+  secrets/variables above. Their configuration alone is not evidence of a
+  passed quality gate or published images.
+
+See [GitHub workflow_run documentation](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#workflow_run)
+for completion filtering, permissions and the security considerations of chaining workflows.
