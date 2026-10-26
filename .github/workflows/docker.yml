@@ -190,7 +190,7 @@ jobs:
             --retry 12 --retry-delay 5 --retry-all-errors \
             http://youssef.agrebaoui.takima.school/ \
             -o "$RUNNER_TEMP/frontend.html"
-          grep -q 'id="app"' "$RUNNER_TEMP/frontend.html"
+          grep -Eq 'id=("app"|app)([[:space:]>])' "$RUNNER_TEMP/frontend.html"
 
       - name: Remove deployment key
         if: always()
