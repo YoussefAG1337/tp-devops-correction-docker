@@ -1,0 +1,10 @@
+- name: Start HTTP proxy
+  community.docker.docker_container:
+    name: httpd
+    image: "h1roo/tp-devops-httpd:{{ image_tag }}"
+    state: started
+    restart_policy: unless-stopped
+    published_ports:
+      - "80:80"
+    networks:
+      - name: frontend-network

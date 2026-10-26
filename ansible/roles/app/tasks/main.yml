@@ -1,0 +1,13 @@
+- name: Start API
+  community.docker.docker_container:
+    name: simple-api
+    image: "h1roo/tp-devops-simple-api:{{ image_tag }}"
+    state: started
+    restart_policy: unless-stopped
+    env:
+      DATABASE_HOST: database
+      DATABASE_PASSWORD: "{{ database_password }}"
+    networks:
+      - name: backend-network
+      - name: frontend-network
+  no_log: true

@@ -1,0 +1,20 @@
+- name: Create persistent database volume
+  community.docker.docker_volume:
+    name: db-volume
+    state: present
+
+- name: Start database
+  community.docker.docker_container:
+    name: database
+    image: "h1roo/tp-devops-database:{{ image_tag }}"
+    state: started
+    restart_policy: unless-stopped
+    env:
+      POSTGRES_DB: db
+      POSTGRES_USER: usr
+      POSTGRES_PASSWORD: "{{ database_password }}"
+    volumes:
+      - db-volume:/var/lib/postgresql/data
+    networks:
+      - name: backend-network
+  no_log: true

@@ -1,0 +1,7 @@
+- name: Create application networks
+  community.docker.docker_network:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - frontend-network
+    - backend-network

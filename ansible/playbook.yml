@@ -1,0 +1,35 @@
+- name: Configure application server
+  hosts: all
+  gather_facts: true
+  become: true
+
+  vars:
+    database_password: "{{ lookup('ansible.builtin.env', 'DATABASE_PASSWORD') }}"
+    image_tag: "{{ lookup('ansible.builtin.env', 'IMAGE_TAG') | default('latest', true) }}"
+  
+  pre_tasks:
+    - name: Ensure database password is provided
+      ansible.builtin.assert:
+        that:
+          - database_password | length > 0
+        fail_msg: DATABASE_PASSWORD must be set before deployment.
+      no_log: true
+
+  roles:
+    - docker
+
+    - role: network
+      vars:
+        ansible_python_interpreter: /opt/docker_venv/bin/python
+
+    - role: database
+      vars:
+        ansible_python_interpreter: /opt/docker_venv/bin/python
+
+    - role: app
+      vars:
+        ansible_python_interpreter: /opt/docker_venv/bin/python
+
+    - role: proxy
+      vars:
+        ansible_python_interpreter: /opt/docker_venv/bin/python
