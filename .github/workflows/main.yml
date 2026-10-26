@@ -16,6 +16,18 @@ defaults:
     shell: bash
 
 jobs:
+  build-frontend:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Check frontend production build
+        run: docker build --target build --tag tp-devops-frontend-check ./frontend
+
   test-backend:
     runs-on: ubuntu-24.04
     timeout-minutes: 20

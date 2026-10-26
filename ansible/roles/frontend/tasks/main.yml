@@ -1,0 +1,8 @@
+- name: Start frontend
+  community.docker.docker_container:
+    name: frontend
+    image: "h1roo/tp-devops-frontend:{{ image_tag }}"
+    state: started
+    restart_policy: unless-stopped
+    networks:
+      - name: frontend-network

@@ -7,7 +7,7 @@ services:
     volumes:
       - db-volume:/var/lib/postgresql/data
     networks:
-      - my-network
+      - backend-network
 
   simple-api:
     build: "simple-api"
@@ -15,17 +15,27 @@ services:
       - DATABASE_HOST=database
       - DATABASE_PASSWORD=pwd
     networks:
-      - my-network
+      - backend-network
+      - frontend-network
+
+  frontend:
+    build: "frontend"
+    networks:
+      - frontend-network
 
   httpd:
     build: "http-server"
     ports:
       - "80:80"
     networks:
-      - my-network
+      - frontend-network
+    depends_on:
+      - simple-api
+      - frontend
 
 networks:
-  my-network:
+  frontend-network:
+  backend-network:
 
 volumes:
   db-volume :
